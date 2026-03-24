@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Agendamiento de citas malchingui</title>
+
+<style>
+
+/* 🌑 FONDO */
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg,#1e1e2f,#2c2c3e);
+    margin:0;
+    color:white;
+    overflow-x:hidden;
+    animation: fadePage 0.5s ease;
+}
+
+@keyframes fadePage{
+    from{opacity:0; transform: translateY(10px);}
+    to{opacity:1; transform: translateY(0);}
+}
+
+/* 📦 CARD */
+.card {
+    background:#2c2c3e;
+    padding:30px 25px;
+    margin:80px auto;
+    width:380px;
+    border-radius:20px;
+    box-shadow:0 15px 50px rgba(0,0,0,0.7);
+    animation: slideUp 0.5s ease;
+    position: relative;
+}
+
+@keyframes slideUp{
+    from{opacity:0; transform: translateY(40px);}
+    to{opacity:1; transform: translateY(0);}
+}
+
+/* ✨ ESPECIALIDAD */
+.especialidad-box {
+    background: linear-gradient(45deg,#0072ff,#00c6ff);
+    padding:12px;
+    border-radius:12px;
+    margin-bottom:15px;
+    color:white;
+    font-weight:bold;
+    text-align:center;
+}
+
+/* INPUTS */
+input, select {
+    width:95%;
+    padding:12px;
+    margin:8px 0;
+    border-radius:10px;
+    border:none;
+    outline:none;
+    background:#1e1e2f;
+    color:white;
+}
+
+input::placeholder {
+    color: #aaa;
+}
+
+/* ERRORES */
+.error-campo{
+    color:#ff6b6b;
+    font-size:12px;
+    margin-top:-5px;
+    margin-bottom:5px;
+    text-align:left;
+}
+
+/* BOTONES */
+button {
+    width:95%;
+    padding:14px;
+    margin:10px 0;
+    background: linear-gradient(45deg,#28a745,#00c851);
+    color:white;
+    border:none;
+    cursor:pointer;
+    border-radius:12px;
+    font-weight:bold;
+}
+
+/* TEXTO */
+h2 {
+    text-align:center;
+    color:#00c6ff;
+}
+
+/* TURNOS */
+.turnos {
+    background:#111;
+    padding:12px;
+    border-radius:12px;
+    margin-top:10px;
+    text-align:center;
+}
+
+/* RELOJ */
+.reloj {
+    position:absolute;
+    top:15px;
+    left:15px;
+    font-size:14px;
+    color:#ccc;
+}
+
+/* TOAST */
+.toast{
+    position: fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#00c851;
+    padding:12px 20px;
+    border-radius:10px;
+    opacity:0;
+    transition:0.4s;
+    font-weight:bold;
+}
+
+.toast.show{
+    opacity:1;
+    bottom:40px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="reloj" id="reloj"></div>
+
+<div class="card">
+<h2>Agendar citas médica</h2>
+
+<label>Ingrese nombre y apellido</label>
+<input id="nombre" placeholder="Ej:jonathan flores">
+<div class="error-campo" id="errNombre"></div>
+
+<!-- ❌ ELIMINADO APELLIDO -->
+
+<label>Ingrese N° de contacto</label>
+<input id="contacto" placeholder="Ingrese 10 dígitos">
+<div class="error-campo" id="errContacto"></div>
+
+<label>Ingrese N° de cédula</label>
+<input id="cedula" placeholder="Ingrese 10 dígitos">
+<div class="error-campo" id="errCedula"></div>
+
+<label>Seleccione fecha</label>
+<input id="fecha" type="date" onchange="verTurnos()">
+<div class="error-campo" id="errFecha"></div>
+
+<label>Seleccione hora disponible</label>
+<select id="hora"></select>
+<div class="error-campo" id="errHora"></div>
+
+<div class="turnos" id="turnos"></div>
+
+<!-- 🔽 MOVIDO AQUÍ -->
+<div class="especialidad-box">
+<label><b>Seleccione especialidad médica</b></label>
+<select id="tipo">
+<option value="🩺 Medicina General">🩺 Medicina General</option>
+<option value="👶 Pediatría">👶 Pediatría</option>
+<option value="👩‍⚕️ Ginecología">👩‍⚕️ Ginecología</option>
+<option value="❤️ Cardiología">❤️ Cardiología</option>
+<option value="🧴 Dermatología">🧴 Dermatología</option>
+<option value="🦷 Odontología">🦷 Odontología</option>
+<option value="🧠 Psicología">🧠 Psicología</option>
+<option value="🦴 Traumatología">🦴 Traumatología</option>
+</select>
+</div>
+
+<button onclick="guardar()">Agendar</button>
+<button onclick="location.href='panel_pro.html'">Ver Agenda</button>
+</div>
+
+<div class="toast" id="toast">Guardado correctamente</div>
+
+<script>
+function actualizarHora(){
+    let ahora = new Date();
+    let h = ahora.getHours();
+    let m = ahora.getMinutes();
+    let ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12;
+    h = h ? h : 12;
+    m = m < 10 ? "0"+m : m;
+    document.getElementById("reloj").innerHTML = h + ":" + m + " " + ampm;
+}
+setInterval(actualizarHora,1000);
+
+function mostrarToast(msg){
+    let t = document.getElementById("toast");
+    t.innerHTML = msg;
+    t.classList.add("show");
+    setTimeout(()=> t.classList.remove("show"),2000);
+}
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIza...",
+  authDomain: "citas-medicas-app-3be34.firebaseapp.com",
+  databaseURL: "https://citas-medicas-app-3be34-default-rtdb.firebaseio.com",
+  projectId: "citas-medicas-app-3be34"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+function convertirHora(hora24){
+    let [h,m] = hora24.split(":");
+    h = parseInt(h);
+    let ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12;
+    h = h ? h : 12;
+    return h + ":" + m + " " + ampm;
+}
+
+let citasGlobal = [];
+
+onValue(ref(db,"citas"), snapshot=>{
+    if(snapshot.exists()){
+        citasGlobal = Object.values(snapshot.val());
+        verTurnos();
+    }
+});
+
+window.verTurnos = function(){
+    let f = fecha.value;
+    let horas = [];
+    for(let h=8; h<=17; h++){
+        horas.push((h<10?"0":"")+h+":00");
+        horas.push((h<10?"0":"")+h+":30");
+    }
+
+    citasGlobal.forEach(d=>{
+        if(d.fecha === f){
+            horas = horas.filter(h => convertirHora(h) !== d.hora);
+        }
+    });
+
+    hora.innerHTML = "";
+    horas.forEach(h=>{
+        let opt = document.createElement("option");
+        opt.value = h;
+        opt.textContent = convertirHora(h);
+        hora.appendChild(opt);
+    });
+
+    turnos.innerHTML = "Turnos disponibles: " + horas.length;
+}
+
+/* ✅ VALIDACIONES */
+function validar(){
+
+    let ok = true;
+
+    let nombreVal = nombre.value.trim();
+    let contactoVal = contacto.value.trim();
+    let cedulaVal = cedula.value.trim();
+
+    errNombre.innerHTML="";
+    errContacto.innerHTML="";
+    errCedula.innerHTML="";
+    errFecha.innerHTML="";
+    errHora.innerHTML="";
+
+    if(!/^[A-Za-zÁÉÍÓÚáéíóúñÑ]{3,}$/.test(nombreVal)){
+        errNombre.innerHTML="Ingrese mínimo 3 letras (sin números)";
+        ok=false;
+    }
+
+    if(!/^[0-9]{10}$/.test(contactoVal)){
+        errContacto.innerHTML="Debe tener 10 números";
+        ok=false;
+    }
+
+    if(!/^[0-9]{10}$/.test(cedulaVal)){
+        errCedula.innerHTML="Debe tener 10 números";
+        ok=false;
+    }
+
+    if(!fecha.value){
+        errFecha.innerHTML="Seleccione una fecha";
+        ok=false;
+    }
+
+    if(!hora.value){
+        errHora.innerHTML="Seleccione una hora";
+        ok=false;
+    }
+
+    return ok;
+}
+
+function limpiarFormulario(){
+    nombre.value="";
+    contacto.value="";
+    cedula.value="";
+    fecha.value="";
+    hora.innerHTML="";
+    turnos.innerHTML="";
+}
+
+window.guardar = async function(){
+
+    if(!validar()){
+        mostrarToast("❌ Complete correctamente los campos");
+        return;
+    }
+
+    let data = {
+        nombre: nombre.value,
+        cedula: cedula.value,
+        fecha: fecha.value,
+        hora: convertirHora(hora.value),
+        estado: "pendiente",
+        tipo: tipo.value,
+        contacto: contacto.value
+    };
+
+    await set(ref(db, "citas/" + data.cedula), data);
+
+    mostrarToast("✅ Cita guardada correctamente");
+    limpiarFormulario();
+}
+</script>
+
+</body>
+</html>
