@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>INFORMACION</title>
+
+<style>
+
+/* ===== ANIMACIONES ===== */
+@keyframes fadeIn {
+from {opacity:0; transform:translateY(10px);}
+to {opacity:1; transform:translateY(0);}
+}
+
+/* ===== BODY ===== */
+body {
+    animation: fadeIn 0.6s ease;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: #e0e0e0;
+    margin: 0;
+}
+
+/* ===== TITULOS ===== */
+h2,h3{
+    text-align:center;
+    color:#00e5ff;
+}
+
+/* ===== LOGIN ===== */
+#loginBox{
+    display:none;
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.85);
+    justify-content:center;
+    align-items:center;
+    z-index:2000;
+}
+
+.card{
+    background:#ffffff;
+    color:#333;
+    padding:30px;
+    border-radius:15px;
+    width:320px;
+    text-align:center;
+    box-shadow:0 0 25px rgba(0,0,0,0.5);
+}
+
+.card input{
+    width:90%;
+    padding:12px;
+    margin:10px;
+    border-radius:8px;
+    border:1px solid #ccc;
+}
+
+.card button{
+    width:95%;
+    padding:12px;
+    background:linear-gradient(45deg,#00c6ff,#0072ff);
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    margin-top:5px;
+}
+
+/* ===== MENU ===== */
+.menu-icon {
+    position: fixed;
+    top:15px;
+    right:15px;
+    font-size: 32px;
+    cursor: pointer;
+    color:#00e5ff;
+    z-index:1000;
+}
+
+.menu {
+    position: fixed;
+    top:0;
+    right:-280px;
+    width:280px;
+    height:100%;
+    background:#111;
+    padding-top:70px;
+    transition:0.4s;
+}
+
+.menu a{
+    display:block;
+    padding:15px;
+    color:#fff;
+    cursor:pointer;
+    border-bottom:1px solid #333;
+}
+
+.menu a:hover{
+    background:#00c6ff;
+}
+
+.menu.active { right:0; }
+
+/* ===== SECCIONES ===== */
+.section { display:none; }
+.active { display:block; }
+
+/* ===== TABLA PRO ===== */
+table {
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 30px auto;
+    border-collapse: collapse;
+    width: 95%;
+    max-width: 1100px;
+    background: #1e1e1e;
+    box-shadow:0 0 20px rgba(0,0,0,0.5);
+}
+
+th {
+    background:#00c6ff;
+    color:#000;
+    padding:12px;
+}
+
+td {
+    padding:10px;
+    text-align:center;
+}
+
+tr:nth-child(even){
+    background:#2a2a2a;
+}
+
+tr:hover{
+    background:#00c6ff33;
+}
+
+/* ===== BOTONES ===== */
+button{
+    border:none;
+    padding:6px 10px;
+    border-radius:6px;
+    cursor:pointer;
+    margin:2px;
+}
+
+button:hover{
+    transform:scale(1.05);
+}
+
+.btn-ok{background:#28a745;color:white;}
+.btn-no{background:#dc3545;color:white;}
+.btn-wait{background:#ffc107;color:black;}
+
+/* ===== PACIENTE CARD ===== */
+#resultadoPaciente div{
+    background:#1e1e1e;
+    margin:20px auto;
+    padding:20px;
+    border-radius:12px;
+    max-width:400px;
+    box-shadow:0 0 15px rgba(0,0,0,0.4);
+}
+
+/* INPUT BUSCAR */
+#cedulaBuscar{
+    display:block;
+    margin:20px auto;
+    padding:12px;
+    width:250px;
+    border-radius:8px;
+    border:none;
+    text-align:center;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="loginBox">
+<div class="card">
+<h2>🔐 Login Médico</h2>
+<input id="email" placeholder="Correo">
+<input id="pass" type="password" placeholder="Contraseña">
+<button onclick="login()">Ingresar</button>
+<button onclick="cerrarLogin()">⬅ Volver</button>
+<div id="error" style="color:red;"></div>
+</div>
+</div>
+
+<!-- MENU -->
+<div class="menu-icon" onclick="toggleMenu()">☰</div>
+<div id="menu" class="menu">
+<a onclick="abrirLogin()">👨‍⚕️ DOCTOR</a>
+<a onclick="mostrar('paciente')">🧑 PACIENTE</a>
+
+<!-- ✅ NUEVO BOTÓN AGREGADO -->
+<a href="agendar_pro.html">📅 AGENDAR CITA</a>
+
+</div>
+
+<h2>🏥 SISTEMA DE CITAS MÉDICAS</h2>
+
+<!-- DOCTOR -->
+<div id="doctor" class="section">
+<h2>📋 CITAS AGENDADAS</h2>
+<table>
+<thead>
+<tr>
+<th>Paciente</th>
+<th>CI</th>
+<th>Fecha</th>
+<th>Especialidad</th>
+<th>Contacto</th>
+<th>Consulta</th>
+<th>Acción</th>
+</tr>
+</thead>
+<tbody id="tabla"></tbody>
+</table>
+</div>
+
+<!-- PACIENTE -->
+<div id="paciente" class="section">
+<h3>🔎 Consulta tu Cita</h3>
+<input id="cedulaBuscar" placeholder="Ingrese su cédula" oninput="buscarTiempoReal()">
+<div id="resultadoPaciente"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCbmuEqDneHyqT-RZe_6ZP98W7Z-SzY79Y",
+  authDomain: "citas-medicas-app-3be34.firebaseapp.com",
+  databaseURL: "https://citas-medicas-app-3be34-default-rtdb.firebaseio.com",
+  projectId: "citas-medicas-app-3be34"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+
+/* MENU */
+window.toggleMenu = function(){
+    document.getElementById("menu").classList.toggle("active");
+}
+
+/* LOGIN */
+window.abrirLogin = function(){
+    document.getElementById("loginBox").style.display="flex";
+    toggleMenu();
+}
+
+window.cerrarLogin = function(){
+    document.getElementById("loginBox").style.display="none";
+}
+
+window.login = async function(){
+try{
+let cred = await signInWithEmailAndPassword(auth,email.value,pass.value);
+let uid = cred.user.uid;
+
+let snap = await get(ref(db,"usuarios/"+uid));
+
+if(snap.exists()){
+let rol = snap.val().rol;
+
+if(rol === "doctor"){
+document.getElementById("loginBox").style.display="none";
+mostrar("doctor");
+}else{
+error.innerHTML="❌ No tienes permisos";
+}
+}
+
+}catch(e){
+error.innerHTML="❌ Credenciales incorrectas";
+}
+}
+
+/* VISTA */
+window.mostrar = function(tipo){
+    document.getElementById("doctor").classList.remove("active");
+    document.getElementById("paciente").classList.remove("active");
+    document.getElementById(tipo).classList.add("active");
+}
+
+/* INICIO */
+window.onload = function(){
+    mostrar("paciente");
+}
+
+/* ACCIONES */
+window.atendido = function(id){
+    update(ref(db,"citas/"+id),{ estado:"atendido" });
+}
+window.cancelado = function(id){
+    update(ref(db,"citas/"+id),{ estado:"cancelado" });
+}
+window.aplazar = async function(id){
+    let nuevaFecha = prompt("Nueva fecha (YYYY-MM-DD):");
+    let nuevaHora = prompt("Nueva hora (HH:MM):");
+    if(!nuevaFecha || !nuevaHora) return;
+
+    await update(ref(db,"citas/"+id),{
+        fecha:nuevaFecha,
+        hora:nuevaHora,
+        estado:"aplazado"
+    });
+}
+
+/* TIEMPO REAL PRO */
+onValue(ref(db,"citas"), (snapshot)=>{
+    let html = "";
+
+    if(snapshot.exists()){
+        let datos = snapshot.val();
+
+        Object.entries(datos).forEach(([id, d])=>{
+
+            if(!d || !d.nombre || !d.apellido || !d.cedula){
+                return;
+            }
+
+            html += `
+<tr>
+<td>${d.nombre} ${d.apellido}</td>
+<td>${d.cedula}</td>
+<td>${d.fecha || "-"} ${d.hora || ""}</td>
+<td>${d.tipo || "-"}</td>
+<td>${d.contacto || "-"}</td>
+<td>${d.estado || "pendiente"}</td>
+<td>
+<button class="btn-ok" onclick="atendido('${id}')">✔</button>
+<button class="btn-no" onclick="cancelado('${id}')">❌</button>
+<button class="btn-wait" onclick="aplazar('${id}')">⏳</button>
+</td>
+</tr>`;
+        });
+
+    } else {
+        html = `<tr><td colspan="7">No hay citas registradas</td></tr>`;
+    }
+
+    tabla.innerHTML = html;
+});
+
+/* BUSQUEDA PACIENTE */
+let timeout=null;
+window.buscarTiempoReal = function(){
+clearTimeout(timeout);
+
+timeout=setTimeout(async()=>{
+let ced=cedulaBuscar.value;
+
+if(ced.length<3){
+resultadoPaciente.innerHTML="";
+return;
+}
+
+let snapshot = await get(ref(db,"citas/"+ced));
+
+if(snapshot.exists()){
+let d=snapshot.val();
+
+resultadoPaciente.innerHTML=`
+<div>
+<h3>📌 CITA ENCONTRADA</h3>
+<p><b>Especialidad:</b> ${d.tipo}</p>
+<p><b>Paciente:</b> ${d.nombre} ${d.apellido}</p>
+<p><b>Fecha:</b> ${d.fecha} - ${d.hora}</p>
+<p><b>Consulta:</b> ${d.estado}</p>
+<p><b>Contacto:</b> ${d.contacto}</p>
+</div>`;
+}else{
+resultadoPaciente.innerHTML="<p style='color:red;text-align:center'>❌ Cita no encontrada</p>";
+}
+
+},400);
+}
+</script>
+
+</body>
+</html>
